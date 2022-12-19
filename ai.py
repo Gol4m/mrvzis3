@@ -3,30 +3,38 @@ import random
 
 
 def main_function(seq: list, window_size: int, m: int, error: float, max_iterations: int, alpha: float, predict: int):
-    x, y = create_x_y(seq, window_size)
+    xl, yl = list(), list()
+    x, y = create_x_y(seq, window_size, xl, yl)
     x = extend_matrix(x, m)
     w1, w2 = create_weights(window_size, m)
     w1, w2 = learning(error, max_iterations, x, w1, w2, y, alpha)
-    out = to_predict(w1, w2, predict, m, x, y)
+    out = list()
+    out = to_predict(w1, w2, predict, m, x, y, out)
     return out
 
 
-def create_x_y(seq: list, p: int):
-    one = 1
-    x = []
-    y = []
-    i = 0
-    while i + p< len(seq):
-        a = []
-        for j in range(p):
-            a.append(seq[j + i])
-        x.append(a)
-        y.append(seq[i + p])
-        i = i + one
+def create_np_arrays(x, y):
+    X = np.array(x)
+    Y = np.array(y)
+    return X, Y
 
-    x = np.array(x)
-    y = np.array(y)
-    return x, y
+
+def iteration(i):
+    i1 = i + 1
+    return i1
+
+
+def create_x_y(seq: list, p: int, xl: list, yl: list):
+    i = 0
+    while i + p < len(seq):
+        l = list()
+        for j in range(p):
+            l.append(seq[j + i])
+        xl.append(l)
+        yl.append(seq[i + p])
+        i = iteration(i)
+    return create_np_arrays(xl, yl)
+
 
 
 def extend_matrix(x, m):
@@ -46,7 +54,6 @@ def create_weights(p, m):
     # w2 = numpy.random.rand(m, 1)
     # print(wq)
     return w1, w2
-####################
 
 
 def fill_with_zeros(x, y):
@@ -82,41 +89,74 @@ def w2_count(w2, alpha, delta, h):
     return w
 
 
+def count_error(this_error, delta):
+    new_error = this_error + (delta ** 2)[0] / 2
+    return new_error
+
+
+def get_delta(out, y, i):
+    delta = out - y[i]
+    return delta
+
+
+def lear(z, w1, w2, y, i, alpha, this_error):
+    h = activation_function(z @ w1)
+    out = activation_function(h @ w2)
+    delta = get_delta(out, y, i)
+    w11, w22 = w1_count(w1, alpha, delta, z, w2), w2_count(w2, alpha, delta, h)
+    this_errorr = count_error(this_error, delta)
+    return h, out, delta, w11, w22, this_errorr
+
+
 def learning(error, n, x, w1, w2, y, alpha):
-    one = 1
     this_error = 1
     k = 1
     while error <= this_error and k <= n:
         this_error = 0
         for i in range(len(x)):
-            z = fill_with_zeros(one, len(x[i]))
+            z = fill_with_zeros(1, len(x[i]))
             for j in range(len(x[i])):
                 z[0][j] = x[i][j]
-            h = activation_function(z @ w1)
-            out = activation_function(h @ w2)
-            delta = out - y[i]
-            w1 = w1_count(w1, alpha, delta, z, w2)
-            w2 = w2_count(w2, alpha, delta, h)
-            this_error = this_error + (delta ** 2)[0] / 2
+            h, out, delta, w1, w2, this_error = lear(z, w1, w2, y, i, alpha, this_error)
         print("%d: %s" % (k, this_error))
         k = k + 1
 
     return w1, w2
 
 
-def to_predict(w1, w2, predict, m, x, y):
+def multiply_matrix(X, Y):
+    Q = X @ Y
+    return Q
+
+
+def for_x1(m):
+    ind = 1
+    new_X = list()
+    for _ in range(m):
+        new_X.extend(-1, :-m)
+        ind = ind + 1
+    return new_X
+
+
+def for_x2(X):
+    ind = 1
+    new_X = list()
+    for _ in X:
+        new_X.append(X[ind])
+        ind = ind + 1
+    return new_X
+
+
+
+
+def to_predict(w1, w2, predict, m, x, y, out):
     context = np.reshape(y[-1], 1)
-    X = x[-1, :-m]
-    out = []
-    amo = range(predict)
-    for i in amo:
-        X = X[1:]
-        train = np.concatenate((X, context))
-        X = np.concatenate((X, context))
+    X = for_x1(X, m)
+    for _ in range(predict):
+        X = for_x2(X)
+        X, train = np.concatenate((X, context)), np.concatenate((X, context))
         train = np.append(train, np.array([0] * m))
-        h = train @ w1
-        output = h @ w2
-        context = output
+        h, output = multiply_matrix(train, w1), multiply_matrix(h, w2)
         out.append(output[0])
     return out
 
