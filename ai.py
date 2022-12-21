@@ -7,9 +7,9 @@ def main_function(seq: list, window_size: int, m: int, error: float, max_iterati
     x, y = create_x_y(seq, window_size, xl, yl)
     x = extend_matrix(x, m)
     w1, w2 = create_weights(window_size, m)
-    w1, w2 = learning(error, max_iterations, x, w1, w2, y, alpha)
+    w1, w2 = learning(error, max_iterations, x, w1, w2, y, alpha, 1, 1)
     out = list()
-    out = to_predict(w1, w2, predict, m, x, y, out)
+    out = to_predict(w1, w2, predict, m, y, out)
     return out
 
 
@@ -100,27 +100,24 @@ def get_delta(out, y, i):
 
 
 def lear(z, w1, w2, y, i, alpha, this_error):
-    h = activation_function(z @ w1)
-    out = activation_function(h @ w2)
+    h, out = activation_function(multiply_matrix(z, w1)), activation_function(multiply_matrix(h, w2))
     delta = get_delta(out, y, i)
     w11, w22 = w1_count(w1, alpha, delta, z, w2), w2_count(w2, alpha, delta, h)
     this_errorr = count_error(this_error, delta)
     return h, out, delta, w11, w22, this_errorr
 
 
-def learning(error, n, x, w1, w2, y, alpha):
-    this_error = 1
-    k = 1
-    while error <= this_error and k <= n:
-        this_error = 0
-        for i in range(len(x)):
-            z = fill_with_zeros(1, len(x[i]))
-            for j in range(len(x[i])):
-                z[0][j] = x[i][j]
-            h, out, delta, w1, w2, this_error = lear(z, w1, w2, y, i, alpha, this_error)
-        print("%d: %s" % (k, this_error))
-        k = k + 1
-
+def learning(error, n, x, w1, w2, y, alpha, this_error, k):
+    while error <= this_error:
+        while k <= n:
+            this_error = 0
+            for i in range(len(x)):
+                z = fill_with_zeros(1, len(x[i]))
+                for j in range(len(x[i])):
+                    z[0][j] = x[i][j]
+                h, out, delta, w1, w2, this_error = lear(z, w1, w2, y, i, alpha, this_error)
+            print("%d: %s" % (k, this_error))
+            k = iteration(k)
     return w1, w2
 
 
@@ -149,7 +146,7 @@ def for_x2(X):
 
 
 
-def to_predict(w1, w2, predict, m, x, y, out):
+def to_predict(w1, w2, predict, m, y, out):
     context = np.reshape(y[-1], 1)
     X = for_x1(X, m)
     for _ in range(predict):
