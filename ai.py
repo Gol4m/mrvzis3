@@ -9,7 +9,7 @@ def main_function(seq: list, window_size: int, m: int, error: float, max_iterati
     w1, w2 = create_weights(window_size, m)
     w1, w2 = learning(error, max_iterations, x, w1, w2, y, alpha, 1, 1)
     out = list()
-    out = to_predict(w1, w2, predict, m, y, out)
+    out = to_predict(w1, w2, predict, m, y, out, 0)
     return out
 
 
@@ -99,7 +99,7 @@ def get_delta(out, y, i):
     return delta
 
 
-def lear(z, w1, w2, y, i, alpha, this_error):
+def learn(z, w1, w2, y, i, alpha, this_error):
     h, out = activation_function(multiply_matrix(z, w1)), activation_function(multiply_matrix(h, w2))
     delta = get_delta(out, y, i)
     w11, w22 = w1_count(w1, alpha, delta, z, w2), w2_count(w2, alpha, delta, h)
@@ -115,7 +115,7 @@ def learning(error, n, x, w1, w2, y, alpha, this_error, k):
                 z = fill_with_zeros(1, len(x[i]))
                 for j in range(len(x[i])):
                     z[0][j] = x[i][j]
-                h, out, delta, w1, w2, this_error = lear(z, w1, w2, y, i, alpha, this_error)
+                h, out, delta, w1, w2, this_error = learn(z, w1, w2, y, i, alpha, this_error)
             print("%d: %s" % (k, this_error))
             k = iteration(k)
     return w1, w2
@@ -146,15 +146,16 @@ def for_x2(X):
 
 
 
-def to_predict(w1, w2, predict, m, y, out):
+def to_predict(w1, w2, predict, m, y, out, i):
     context = np.reshape(y[-1], 1)
     X = for_x1(X, m)
-    for _ in range(predict):
+    while i != range(predict):
         X = for_x2(X)
         X, train = np.concatenate((X, context)), np.concatenate((X, context))
         train = np.append(train, np.array([0] * m))
         h, output = multiply_matrix(train, w1), multiply_matrix(h, w2)
         out.append(output[0])
+        i = iteration(i)
     return out
 
 
